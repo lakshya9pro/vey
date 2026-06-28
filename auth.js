@@ -5,8 +5,9 @@ const JWT_SECRET = process.env.JWT_SECRET || 'super_secret_file_server_key_10293
 const ADMIN_PASSWORD_HASH = bcrypt.hashSync(process.env.ADMIN_PASSWORD || 'admin', 10);
 
 const authenticateToken = (req, res, next) => {
-  // Allow local connections from the Android app without auth (for /api/files sync)
-  if (req.path === '/api/files' || req.path === '/api/device_status_update') {
+  // Allow connections from the Android app without auth for sync, transfer, and status
+  const url = req.originalUrl || req.url;
+  if (url.startsWith('/api/files') || url.startsWith('/api/device_status_update') || url.startsWith('/api/transfer')) {
     return next();
   }
 
