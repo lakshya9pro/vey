@@ -567,11 +567,10 @@ function setupCloudEventListeners() {
     const googleToken = document.getElementById('inputGoogleToken').value.trim();
 
     if (!googleToken) {
-      alert('Please enter a valid Google Drive Access Token.');
+      alert('Please enter a valid Pixeldrain API Key.');
       return;
     }
 
-    // Save token in memory/input for ease during session
     try {
       const res = await apiFetch('/api/upload_cloud', {
         method: 'POST',
@@ -579,10 +578,10 @@ function setupCloudEventListeners() {
       });
       const data = await res.json();
       if (data.success) {
-        addLogToConsole('Cloud Upload', 'Cloud streaming request acknowledged.');
+        addLogToConsole('Pixeldrain Upload', 'Pixeldrain cloud upload stream initialized.');
       }
     } catch (err) {
-      alert('Cloud upload initiate failed: ' + err.message);
+      alert('Pixeldrain upload initiate failed: ' + err.message);
     }
   });
 }

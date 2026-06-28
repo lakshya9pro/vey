@@ -358,26 +358,26 @@
     </div>
   </div>
 
-  <!-- Modal: Cloud Upload (Google Drive) -->
+  <!-- Modal: Cloud Upload (Pixeldrain) -->
   <div class="modal" id="modalCloud">
     <div class="modal-content">
       <div class="modal-header">
-        <h3>Upload to Cloud</h3>
+        <h3>Upload to Pixeldrain</h3>
         <button class="btn-close-modal" onclick="closeModal('modalCloud')">×</button>
       </div>
       <div class="modal-body">
         <input type="hidden" id="inputCloudFileId">
         <div class="cloud-provider-select">
           <div class="provider-option active">
-            <span class="provider-icon">📁</span>
-            <span>Google Drive</span>
+            <span class="provider-icon">⚡</span>
+            <span>Pixeldrain Cloud</span>
           </div>
         </div>
 
-        <div class="form-group">
-          <label for="inputGoogleToken">OAuth Access Token:</label>
-          <input type="password" id="inputGoogleToken" class="form-input" placeholder="Paste Google Drive OAuth Token">
-          <small class="helper-text">You can acquire a temporary token from the Google API OAuth Playground.</small>
+        <div class="form-group" style="margin-top: 15px;">
+          <label for="inputGoogleToken">Pixeldrain API Key:</label>
+          <input type="password" id="inputGoogleToken" class="form-input" placeholder="8903bf25-2378-4815-8af2-85806e6700c6" value="8903bf25-2378-4815-8af2-85806e6700c6">
+          <small class="helper-text">Using pre-configured API Key. You can substitute this with your custom key if desired.</small>
         </div>
 
         <!-- Upload Status Block -->
@@ -397,7 +397,7 @@
       </div>
       <div class="modal-footer">
         <button class="btn-secondary" id="btnCancelCloudUpload" onclick="closeModal('modalCloud')">Cancel</button>
-        <button class="btn-primary" id="btnConfirmCloudUpload">Stream to Drive</button>
+        <button class="btn-primary" id="btnConfirmCloudUpload">Stream to Pixeldrain</button>
       </div>
     </div>
   </div>
