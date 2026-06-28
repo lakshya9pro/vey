@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard - Personal File Server</title>
+  <!-- Outfit Font -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- CSS Stylesheet -->
+  <link rel="stylesheet" href="style.css">
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Socket.io client -->
+  <script src="/socket.io/socket.io.js"></script>
+</head>
+<body>
+
+  <!-- Main Container -->
+  <div class="app-container">
+
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <span class="sidebar-logo-icon">🖧</span>
+        <div class="sidebar-title-group">
+          <h2>CloudNAS</h2>
+          <span class="status-indicator-badge online" id="serverStatusBadge">
+            <span class="status-dot"></span> Online
+          </span>
+        </div>
+      </div>
+
+      <nav class="sidebar-menu">
+        <a href="#" class="menu-item active" data-tab="tab-browser">
+          <span class="menu-icon">📂</span> File Browser
+        </a>
+        <a href="#" class="menu-item" data-tab="tab-analyzer">
+          <span class="menu-icon">📊</span> Storage Analyzer
+        </a>
+        <a href="#" class="menu-item" data-tab="tab-duplicates">
+          <span class="menu-icon">👥</span> Duplicate Finder
+        </a>
+        <a href="#" class="menu-item" data-tab="tab-favorites">
+          <span class="menu-icon">⭐</span> Favorites
+        </a>
+        <a href="#" class="menu-item" data-tab="tab-recycle">
+          <span class="menu-icon">🗑️</span> Recycle Bin
+        </a>
+        <a href="#" class="menu-item" data-tab="tab-logs">
+          <span class="menu-icon">📋</span> Activity Logs
+        </a>
+      </nav>
+
+      <!-- Sidebar Device Info Widget -->
+      <div class="device-widget">
+        <h3 id="widgetPhoneName">Android Phone</h3>
+        <p class="device-os" id="widgetOsVersion">Connecting...</p>
+        <div class="progress-bar-group">
+          <div class="bar-label">
+            <span>Storage Used</span>
+            <span id="widgetStorageText">0 GB / 0 GB</span>
+          </div>
+          <div class="progress-track">
+            <div class="progress-fill" id="widgetStorageBar" style="width: 0%;"></div>
+          </div>
+        </div>
+
+        <div class="progress-bar-group">
+          <div class="bar-label">
+            <span>RAM Usage</span>
+            <span id="widgetRamText">0 MB / 0 MB</span>
+          </div>
+          <div class="progress-track">
+            <div class="progress-fill" id="widgetRamBar" style="width: 0%;"></div>
+          </div>
+        </div>
+
+        <div class="device-detail-row">
+          <span>Battery Status:</span>
+          <span id="widgetBatteryText">--%</span>
+        </div>
+        <div class="device-detail-row">
+          <span>Wi-Fi IP:</span>
+          <span id="widgetIpText">0.0.0.0</span>
+        </div>
+        <div class="device-detail-row">
+          <span>Uptime:</span>
+          <span id="widgetUptimeText">0m</span>
+        </div>
+      </div>
+
+      <div class="sidebar-footer">
+        <button class="btn-logout" id="btnLogoutBtn">🚪 Sign Out</button>
+      </div>
+    </aside>
+
+    <!-- Main Content Panel -->
+    <main class="content-panel">
+
+      <!-- ============================================== -->
+      <!-- TAB: FILE BROWSER -->
+      <!-- ============================================== -->
+      <section class="tab-content active" id="tab-browser">
+        <header class="content-header">
+          <div class="breadcrumb-container" id="breadcrumbTrail">
+            <span class="breadcrumb-item root" data-path="">Home</span>
+          </div>
+          <div class="header-actions">
+            <input type="text" placeholder="Quick Search..." class="search-input" id="browserSearchInput">
+            <button class="btn-primary" id="btnNewFolder">➕ New Folder</button>
+            <button class="btn-secondary" id="btnRefreshBrowser">🔄 Refresh</button>
+            <div class="view-toggle-group">
+              <button class="btn-view active" id="btnViewGrid" title="Grid View">🔲</button>
+              <button class="btn-view" id="btnViewList" title="List View">≡</button>
+            </div>
+          </div>
+        </header>
+
+        <!-- Sorting and Filtering Toolbar -->
+        <div class="toolbar-sub">
+          <div class="filter-group">
+            <button class="btn-filter active" data-type="">All</button>
+            <button class="btn-filter" data-type="image">Images</button>
+            <button class="btn-filter" data-type="video">Videos</button>
+            <button class="btn-filter" data-type="audio">Audio</button>
+            <button class="btn-filter" data-type="document">Documents</button>
+          </div>
+          <div class="sort-group">
+            <label>Sort:</label>
+            <select id="sortFieldSelect">
+              <option value="name">Name</option>
+              <option value="size">Size</option>
+              <option value="modified">Date Modified</option>
+              <option value="extension">Type</option>
+            </select>
+            <select id="sortOrderSelect">
+              <option value="asc">Ascending</option>
+              <option value="desc">Descending</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Files Container -->
+        <div class="files-container grid-view" id="filesGrid">
+          <!-- Files & folders rendered here -->
+        </div>
+
+        <!-- Pagination Controls -->
+        <footer class="browser-footer">
+          <span class="items-count" id="browserItemsCount">0 items found</span>
+          <div class="pagination-controls" id="paginationControls">
+            <button class="btn-pagination" id="btnPagePrev" disabled>◀ Previous</button>
+            <span class="page-indicator" id="pageIndicator">Page 1 of 1</span>
+            <button class="btn-pagination" id="btnPageNext" disabled>Next ▶</button>
+          </div>
+        </footer>
+      </section>
+
+      <!-- ============================================== -->
+      <!-- TAB: STORAGE ANALYZER -->
+      <!-- ============================================== -->
+      <section class="tab-content" id="tab-analyzer">
+        <header class="content-header">
+          <h1>Storage Space Analyzer</h1>
+        </header>
+        <div class="analyzer-grid">
+          <div class="card analyzer-chart-card">
+            <h3>Usage Allocation</h3>
+            <div class="chart-container">
+              <canvas id="storageChart"></canvas>
+            </div>
+          </div>
+          <div class="card analyzer-stats-card">
+            <h3>Allocation Breakdown</h3>
+            <div class="table-container">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Category</th>
+                    <th>Files Count</th>
+                    <th>Storage Used</th>
+                  </tr>
+                </thead>
+                <tbody id="analyzerTableBody">
+                  <!-- Category breakdown rows -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div class="card files-largest-card">
+          <h3>Top 10 Largest Files</h3>
+          <div class="table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Folder Path</th>
+                  <th>File Size</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="largestFilesTableBody">
+                <!-- Large files rows -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================== -->
+      <!-- TAB: DUPLICATE FINDER -->
+      <!-- ============================================== -->
+      <section class="tab-content" id="tab-duplicates">
+        <header class="content-header">
+          <h1>Duplicate File Finder</h1>
+        </header>
+        <div class="card">
+          <div class="card-header-desc">
+            <p>Finds duplicate files based on matching filename and byte size. Review carefully before permanently deleting copies.</p>
+          </div>
+          <div class="table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Duplicate Group Details</th>
+                  <th>Occurrences</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="duplicatesTableBody">
+                <!-- Duplicate rows -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================== -->
+      <!-- TAB: FAVORITES -->
+      <!-- ============================================== -->
+      <section class="tab-content" id="tab-favorites">
+        <header class="content-header">
+          <h1>Starred Favorites</h1>
+        </header>
+        <div class="files-container grid-view" id="favoritesGrid">
+          <!-- Favorite items -->
+        </div>
+      </section>
+
+      <!-- ============================================== -->
+      <!-- TAB: RECYCLE BIN -->
+      <!-- ============================================== -->
+      <section class="tab-content" id="tab-recycle">
+        <header class="content-header">
+          <h1>Recycle Bin</h1>
+          <button class="btn-danger" id="btnClearRecycleBin">Empty Recycle Bin</button>
+        </header>
+        <div class="card">
+          <div class="table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Filename</th>
+                  <th>Original Path</th>
+                  <th>Size</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="recycleTableBody">
+                <!-- Recycle items -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================== -->
+      <!-- TAB: ACTIVITY LOGS -->
+      <!-- ============================================== -->
+      <section class="tab-content" id="tab-logs">
+        <header class="content-header">
+          <h1>System Activity Logs</h1>
+        </header>
+        <div class="card log-card">
+          <div class="log-console" id="logConsoleContainer">
+            <!-- Logs line-by-line -->
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- ============================================== -->
+  <!-- MODAL WINDOWS -->
+  <!-- ============================================== -->
+
+  <!-- Modal: Create Folder -->
+  <div class="modal" id="modalMkdir">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Create New Directory</h3>
+        <button class="btn-close-modal" onclick="closeModal('modalMkdir')">×</button>
+      </div>
+      <div class="modal-body">
+        <label>Directory Name:</label>
+        <input type="text" id="inputMkdirName" class="form-input" placeholder="e.g. Backups">
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" onclick="closeModal('modalMkdir')">Cancel</button>
+        <button class="btn-primary" id="btnConfirmMkdir">Create Folder</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Rename File/Folder -->
+  <div class="modal" id="modalRename">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Rename Item</h3>
+        <button class="btn-close-modal" onclick="closeModal('modalRename')">×</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="inputRenameId">
+        <label>New Name:</label>
+        <input type="text" id="inputRenameName" class="form-input">
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" onclick="closeModal('modalRename')">Cancel</button>
+        <button class="btn-primary" id="btnConfirmRename">Save Changes</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Move or Copy Item -->
+  <div class="modal" id="modalMoveCopy">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="moveCopyModalTitle">Move / Copy File</h3>
+        <button class="btn-close-modal" onclick="closeModal('modalMoveCopy')">×</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="inputMoveCopyId">
+        <input type="hidden" id="inputMoveCopyAction"> <!-- "move" or "copy" -->
+        <label>Select Target Folder:</label>
+        <div class="folder-picker-tree" id="folderPickerTree">
+          <!-- Render directory list recursively -->
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" onclick="closeModal('modalMoveCopy')">Cancel</button>
+        <button class="btn-primary" id="btnConfirmMoveCopy">Apply Action</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Cloud Upload (Google Drive) -->
+  <div class="modal" id="modalCloud">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Upload to Cloud</h3>
+        <button class="btn-close-modal" onclick="closeModal('modalCloud')">×</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="inputCloudFileId">
+        <div class="cloud-provider-select">
+          <div class="provider-option active">
+            <span class="provider-icon">📁</span>
+            <span>Google Drive</span>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="inputGoogleToken">OAuth Access Token:</label>
+          <input type="password" id="inputGoogleToken" class="form-input" placeholder="Paste Google Drive OAuth Token">
+          <small class="helper-text">You can acquire a temporary token from the Google API OAuth Playground.</small>
+        </div>
+
+        <!-- Upload Status Block -->
+        <div class="cloud-progress-block" id="cloudProgressBlock" style="display: none;">
+          <div class="progress-header">
+            <span id="cloudProgressStatus">Uploading...</span>
+            <span id="cloudProgressPercent">0%</span>
+          </div>
+          <div class="progress-track">
+            <div class="progress-fill" id="cloudProgressBar" style="width: 0%;"></div>
+          </div>
+          <div class="progress-meta">
+            <span id="cloudProgressSpeed">Speed: 0 KB/s</span>
+            <span id="cloudProgressEta">ETA: --</span>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" id="btnCancelCloudUpload" onclick="closeModal('modalCloud')">Cancel</button>
+        <button class="btn-primary" id="btnConfirmCloudUpload">Stream to Drive</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Media Viewer (Video, Audio, Image player) -->
+  <div class="modal modal-large" id="modalViewer">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="viewerTitle">Media Viewer</h3>
+        <button class="btn-close-modal" id="btnMediaViewerClose">×</button>
+      </div>
+      <div class="modal-body viewer-body" id="viewerMediaContainer">
+        <!-- Rendered image, video, audio or pdf frame -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Main JavaScript -->
+  <script src="app.js"></script>
+</body>
+</html>
