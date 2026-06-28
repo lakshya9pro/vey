@@ -103,6 +103,10 @@ async function apiFetch(endpoint, options = {}) {
       window.location.href = '/login.html';
       return null;
     }
+    if (!response.ok) {
+      const errMsg = await response.text();
+      throw new Error(errMsg || `HTTP error! status: ${response.status}`);
+    }
     return response;
   } catch (err) {
     console.error('Fetch error:', err);
